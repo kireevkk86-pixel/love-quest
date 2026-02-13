@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
   import { promises as fs } from "fs";
   import path from "path";
 
@@ -34,15 +34,17 @@
       .filter((file) => isSupported(file, MUSIC_EXTENSIONS))
       .sort((a, b) => a.localeCompare(b, "ru", { sensitivity: "base" }));
 
-    const preferredMusic = musicFiles.find(
-      (file) => file.toLowerCase() === "song.mp3"
-    );
-    const musicFile = preferredMusic ?? musicFiles[0] ?? null;
+    let musicFile: string | null = null;
+
+    try {
+      await fs.access(path.join(musicDir, "song.mp3"));
+      musicFile = "song.mp3";
+    } catch {
+      musicFile = musicFiles[0] ?? null;
+    }
 
     return NextResponse.json({
       photos: photoFiles.map((file) => toPublicUrl("photos", file)),
       music: musicFile ? toPublicUrl("music", musicFile) : null,
-      photoFiles,
-      musicFiles,
     });
   }
