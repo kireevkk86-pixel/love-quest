@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   color-scheme: light;
   --bg-1: #ffe6f0;
   --bg-2: #f7f1ff;
@@ -78,14 +78,6 @@ body::after {
   flex-direction: column;
   gap: 8px;
   margin-bottom: 18px;
-}
-
-.asset-status {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  font-size: 0.9rem;
-  color: #8d6a9b;
 }
 
 .asset-error {
@@ -221,6 +213,7 @@ p {
   position: relative;
   width: 100%;
   height: 120px;
+  padding: 10px;
   border-radius: 18px;
   background: #fff4fb;
   border: 1px dashed #f1c3da;
@@ -229,15 +222,25 @@ p {
   overflow: hidden;
 }
 
+.no-area .btn,
+.no-area .no-btn {
+  width: auto !important;
+  display: inline-flex;
+}
+
 .no-btn {
   position: absolute;
   left: 0;
   top: 0;
+  z-index: 2;
 }
 
 .meme {
   color: #b4648a;
   font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .heart-card {
@@ -293,6 +296,41 @@ p {
   border-radius: 999px;
   font-size: 0.95rem;
   z-index: 5;
+}
+
+.catch-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.catch-heart {
+  position: absolute;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  background: transparent;
+  border: none;
+  padding: 6px;
+  line-height: 1;
+  animation: catchFloat 3.6s linear forwards;
+  filter: drop-shadow(0 8px 16px rgba(255, 95, 162, 0.35));
+}
+
+@keyframes catchFloat {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.9);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(0, 8px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--drift), 220px) scale(1.05);
+  }
 }
 
 .effect-overlay {
@@ -369,7 +407,8 @@ p {
   }
 
   .no-area {
-    height: 140px;
+    height: 170px;
+    padding: 12px;
   }
 
   .photo,

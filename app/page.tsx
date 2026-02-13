@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -9,6 +9,15 @@ type Particle = {
   size: number;
   rotate: number;
   hue: number;
+};
+
+type FlyingHeart = {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  createdAt: number;
+  drift: number;
 };
 
 type AssetsResponse = {
@@ -80,7 +89,11 @@ const QUIZ_QUESTIONS: QuizQuestion[] = [
   },
 ];
 
-const TOTAL_STEPS = 8;
+// МЕНЯЙ ЗДЕСЬ
+const FINAL_TEXT =
+  "Я люблю тебя. В будущем мы поженимся. У нас будет собака по кличке Чертизанова 🐶";
+
+const TOTAL_STEPS = 7;
 const HEART_GOAL = 7;
 
 export default function Page() {
@@ -88,12 +101,11 @@ export default function Page() {
   const [slideIndex, setSlideIndex] = useState(0);
   const [broken, setBroken] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
-  const [hearts, setHearts] = useState(0);
+  const [heartsCaught, setHeartsCaught] = useState(0);
+  const [flyingHearts, setFlyingHearts] = useState<FlyingHeart[]>([]);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
-  const [photoFiles, setPhotoFiles] = useState<string[]>([]);
-  const [musicFiles, setMusicFiles] = useState<string[]>([]);
   const [assetsError, setAssetsError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [objectFit, setObjectFit] = useState<"contain" | "cover">("contain");
@@ -114,6 +126,8 @@ export default function Page() {
   const pledgeAreaRef = useRef<HTMLDivElement | null>(null);
   const pledgeNoRef = useRef<HTMLButtonElement | null>(null);
   const particleId = useRef(0);
+  const heartId = useRef(0);
+  const heartsCaughtRef = useRef(0);
 
   const hasPhotos = photos.length > 0;
   const currentPhoto = hasPhotos ? photos[slideIndex % photos.length] : null;
@@ -134,16 +148,12 @@ export default function Page() {
         if (!active) return;
         setPhotos(Array.isArray(data.photos) ? data.photos : []);
         setMusicUrl(data.music ?? null);
-        setPhotoFiles(Array.isArray(data.photoFiles) ? data.photoFiles : []);
-        setMusicFiles(Array.isArray(data.musicFiles) ? data.musicFiles : []);
         setAssetsError(null);
       } catch (err) {
         if (!active) return;
         setAssetsError(err instanceof Error ? err.message : "Unknown error");
         setPhotos([]);
         setMusicUrl(null);
-        setPhotoFiles([]);
-        setMusicFiles([]);
       }
     };
     loadAssets();
@@ -215,15 +225,71 @@ export default function Page() {
     setQuizLoaded(false);
   }, [step]);
 
+  useEffect(() => {
+    heartsCaughtRef.current = heartsCaught;
+  }, [heartsCaught]);
+
+  useEffect(() => {
+    if (step !== 6) return;
+    setHeartsCaught(0);
+    setFlyingHearts([]);
+  }, [step]);
+
+  useEffect(() => {
+    if (step !== 6 || !quizDone) return;
+    let active = true;
+    const spawnHeart = () => {
+      if (!active) return;
+      if (heartsCaughtRef.current >= HEART_GOAL) return;
+      heartId.current += 1;
+      const now = Date.now();
+      const size = 28 + Math.random() * 18;
+      const heart: FlyingHeart = {
+        id: heartId.current,
+        x: 4 + Math.random() * 92,
+        y: 2 + Math.random() * 78,
+        size,
+        createdAt: now,
+        drift: Math.random() * 70 - 35,
+      };
+      setFlyingHearts((prev) => [...prev, heart]);
+      const lifespan = 3200 + Math.random() * 900;
+      window.setTimeout(() => {
+        if (!active) return;
+        setFlyingHearts((prev) => prev.filter((item) => item.id !== heart.id));
+      }, lifespan);
+    };
+    spawnHeart();
+    const interval = window.setInterval(spawnHeart, 650);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [step, quizDone]);
+
   const moveNoButton = (
     area: HTMLDivElement | null,
     btn: HTMLButtonElement | null
   ) => {
     if (!area || !btn) return;
-    const maxX = Math.max(0, area.clientWidth - btn.offsetWidth);
-    const maxY = Math.max(0, area.clientHeight - btn.offsetHeight);
-    const nextX = Math.random() * maxX;
-    const nextY = Math.random() * maxY;
+    const styles = window.getComputedStyle(area);
+    const padLeft = Number.parseFloat(styles.paddingLeft) || 0;
+    const padRight = Number.parseFloat(styles.paddingRight) || 0;
+    const padTop = Number.parseFloat(styles.paddingTop) || 0;
+    const padBottom = Number.parseFloat(styles.paddingBottom) || 0;
+    const safe = 8;
+    const minX = padLeft + safe;
+    const minY = padTop + safe;
+    const maxX = Math.max(
+      minX,
+      area.clientWidth - btn.offsetWidth - padRight - safe
+    );
+    const maxY = Math.max(
+      minY,
+      area.clientHeight - btn.offsetHeight - padBottom - safe
+    );
+    const nextX = minX + Math.random() * Math.max(0, maxX - minX);
+    const nextY = minY + Math.random() * Math.max(0, maxY - minY);
     btn.style.transform = `translate(${nextX}px, ${nextY}px)`;
   };
 
@@ -334,15 +400,17 @@ export default function Page() {
     showToast(currentQuiz.failToast ?? "Не-а 😅 попробуй ещё");
   };
 
-  const collectHeart = () => {
-    setHearts((prev) => Math.min(HEART_GOAL, prev + 1));
+  const catchHeart = (id: number) => {
+    setFlyingHearts((prev) => prev.filter((item) => item.id !== id));
+    setHeartsCaught((prev) => Math.min(HEART_GOAL, prev + 1));
   };
 
   const restart = () => {
     setStep(1);
     setSlideIndex(0);
     setBroken({});
-    setHearts(0);
+    setHeartsCaught(0);
+    setFlyingHearts([]);
     setToast(null);
   };
 
@@ -375,7 +443,6 @@ export default function Page() {
     if (step === 4) return "Ты любишь меня?";
     if (step === 5) return "Клянись любовью ❤️";
     if (step === 6) return "Тест: моя ли ты любовь?";
-    if (step === 7) return "Этот год — самый счастливый";
     return "Финал";
   })();
 
@@ -387,10 +454,6 @@ export default function Page() {
         <div className="card-top">
           <span className="step">{stepLabel}</span>
           <h1>{screenTitle}</h1>
-          <div className="asset-status">
-            <span>Фото: {photoFiles.length}</span>
-            <span>Музыка: {musicFiles[0] ?? "не найдена"}</span>
-          </div>
           {assetsError && (
             <span className="asset-error">Ошибка чтения файлов: {assetsError}</span>
           )}
@@ -499,7 +562,7 @@ export default function Page() {
               >
                 Нет
               </button>
-              <span className="meme">Кирюша открой дверку</span>
+              <span className="meme">не попадёшь коза!</span>
             </div>
           </section>
         )}
@@ -525,7 +588,7 @@ export default function Page() {
               >
                 Нет
               </button>
-              <span className="meme">Кирюша открой дверку</span>
+              <span className="meme">не попадёшь коза!</span>
             </div>
           </section>
         )}
@@ -574,9 +637,22 @@ export default function Page() {
             )}
             {quizDone && (
               <div className="stack">
-                <p>Ты точно моя любовь ❤️</p>
-                <button className="btn primary" onClick={() => setStep(7)}>
-                  Дальше
+                <p>Поймай 7 сердечек ❤️</p>
+                <div className="progress">
+                  <div
+                    className="progress-fill"
+                    style={{ width: `${(heartsCaught / HEART_GOAL) * 100}%` }}
+                  />
+                </div>
+                <span className="progress-text">
+                  {heartsCaught} / {HEART_GOAL}
+                </span>
+                <button
+                  className="btn primary"
+                  onClick={() => setStep(7)}
+                  disabled={heartsCaught < HEART_GOAL}
+                >
+                  Открыть финал
                 </button>
               </div>
             )}
@@ -585,41 +661,7 @@ export default function Page() {
 
         {step === 7 && (
           <section className="stack">
-            <p>
-              Этот год — самый счастливый. Мы вместе уже больше года, и весь
-              этот год для меня — самое тёплое место на свете.
-            </p>
-            <div className="heart-card" onClick={collectHeart}>
-              <div className="heart-icon">❤</div>
-              <div>
-                <strong>Собери 7 сердечек</strong>
-                <div className="progress">
-                  <div
-                    className="progress-fill"
-                    style={{ width: `${(hearts / HEART_GOAL) * 100}%` }}
-                  />
-                </div>
-                <span className="progress-text">
-                  {hearts} / {HEART_GOAL}
-                </span>
-              </div>
-            </div>
-            <button
-              className="btn primary"
-              onClick={() => setStep(8)}
-              disabled={hearts < HEART_GOAL}
-            >
-              Открыть финал
-            </button>
-          </section>
-        )}
-
-        {step === 8 && (
-          <section className="stack">
-            <p>
-              Я люблю тебя. В будущем мы поженимся. У нас будет собака по
-              кличке Чертизанова 🐶
-            </p>
+            <p>{FINAL_TEXT}</p>
             <div className="row">
               <button
                 className="btn"
@@ -636,6 +678,27 @@ export default function Page() {
           </section>
         )}
       </div>
+
+      {step === 6 && quizDone && (
+        <div className="catch-layer">
+          {flyingHearts.map((heart) => (
+            <button
+              key={heart.id}
+              type="button"
+              className="catch-heart"
+              style={{
+                left: `${heart.x}%`,
+                top: `${heart.y}%`,
+                fontSize: `${heart.size}px`,
+                ["--drift" as string]: `${heart.drift}px`,
+              }}
+              onPointerDown={() => catchHeart(heart.id)}
+            >
+              ❤️
+            </button>
+          ))}
+        </div>
+      )}
 
       {toast && <div className="toast">{toast}</div>}
 
