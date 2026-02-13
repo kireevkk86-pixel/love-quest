@@ -20,8 +20,8 @@ html,
 body {
   padding: 0;
   margin: 0;
-  font-family: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande",
-    "Lucida Sans", Arial, sans-serif;
+  font-family: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Sans", Arial,
+    sans-serif;
   color: var(--text);
   min-height: 100%;
   background: radial-gradient(circle at top left, var(--bg-1), transparent 55%),
@@ -185,6 +185,27 @@ p {
   opacity: 1;
 }
 
+.quiz-image {
+  width: 100%;
+  height: min(40vh, 360px);
+  object-fit: contain;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 12px 24px rgba(74, 30, 107, 0.15);
+  background: #fff7fb;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.quiz-image.loaded {
+  opacity: 1;
+}
+
+.quiz-progress {
+  font-size: 0.95rem;
+  color: #8d6a9b;
+}
+
 .placeholder {
   width: 100%;
   height: min(60vh, 520px);
@@ -325,5 +346,9 @@ p {
   .photo,
   .placeholder {
     height: min(45vh, 360px);
+  }
+
+  .quiz-image {
+    height: min(35vh, 300px);
   }
 }
