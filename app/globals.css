@@ -80,6 +80,24 @@ body::after {
   margin-bottom: 18px;
 }
 
+.asset-status {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: #8d6a9b;
+}
+
+.asset-error {
+  font-size: 0.85rem;
+  color: #c13f5d;
+}
+
+.music-status {
+  font-size: 0.95rem;
+  color: #7a5d88;
+}
+
 h1 {
   margin: 0;
   font-size: clamp(1.6rem, 3.3vw, 2.3rem);

@@ -11,13 +11,11 @@ type Particle = {
   hue: number;
 };
 
-const PHOTOS = [
-  "/photos/1.jpg",
-  "/photos/2.jpg",
-  "/photos/3.jpg",
-  "/photos/4.jpg",
-  "/photos/5.jpg",
-];
+type AssetsResponse = {
+  photos: string[];
+  music: string | null;
+  musicName: string | null;
+};
 
 const TOTAL_STEPS = 7;
 const HEART_GOAL = 7;
@@ -29,24 +27,61 @@ export default function Page() {
   const [toast, setToast] = useState<string | null>(null);
   const [hearts, setHearts] = useState(0);
   const [particles, setParticles] = useState<Particle[]>([]);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [musicUrl, setMusicUrl] = useState<string | null>(null);
+  const [musicName, setMusicName] = useState<string | null>(null);
+  const [assetsError, setAssetsError] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const noAreaRef = useRef<HTMLDivElement | null>(null);
   const noRef = useRef<HTMLButtonElement | null>(null);
   const particleId = useRef(0);
 
-  const currentPhoto = PHOTOS[slideIndex];
-  const isPhotoBroken = broken[currentPhoto];
+  const hasPhotos = photos.length > 0;
+  const currentPhoto = hasPhotos ? photos[slideIndex % photos.length] : null;
+  const isPhotoBroken = currentPhoto ? broken[currentPhoto] : true;
 
   const stepLabel = useMemo(() => `Шаг ${step} из ${TOTAL_STEPS}`, [step]);
 
   useEffect(() => {
-    if (step !== 3) return;
+    let active = true;
+    const loadAssets = async () => {
+      try {
+        const res = await fetch("/api/assets");
+        if (!res.ok) {
+          throw new Error(`Assets API error: ${res.status}`);
+        }
+        const data = (await res.json()) as AssetsResponse;
+        if (!active) return;
+        setPhotos(Array.isArray(data.photos) ? data.photos : []);
+        setMusicUrl(data.music ?? null);
+        setMusicName(data.musicName ?? null);
+        setAssetsError(null);
+      } catch (err) {
+        if (!active) return;
+        setAssetsError(err instanceof Error ? err.message : "Unknown error");
+        setPhotos([]);
+        setMusicUrl(null);
+        setMusicName(null);
+      }
+    };
+    loadAssets();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setSlideIndex(0);
+  }, [photos.length]);
+
+  useEffect(() => {
+    if (step !== 3 || photos.length < 2) return;
     const timer = setInterval(() => {
-      setSlideIndex((prev) => (prev + 1) % PHOTOS.length);
+      setSlideIndex((prev) => (prev + 1) % photos.length);
     }, 3500);
     return () => clearInterval(timer);
-  }, [step]);
+  }, [step, photos.length]);
 
   useEffect(() => {
     if (step !== 4) return;
@@ -66,12 +101,17 @@ export default function Page() {
   };
 
   const playMusic = async () => {
+    if (!musicUrl) {
+      alert("Добавь аудиофайл в public/music (mp3/ogg/wav)");
+      return;
+    }
     const audio = audioRef.current;
     if (!audio) return;
     try {
       await audio.play();
-    } catch {
-      alert("Добавь song.mp3 в /public/music");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      alert(message);
     }
   };
 
@@ -139,6 +179,13 @@ export default function Page() {
         <div className="card-top">
           <span className="step">{stepLabel}</span>
           <h1>{screenTitle}</h1>
+          <div className="asset-status">
+            <span>Фото: {photos.length} файлов</span>
+            <span>Музыка: {musicName ?? "нет"}</span>
+          </div>
+          {assetsError && (
+            <span className="asset-error">Ошибка чтения файлов: {assetsError}</span>
+          )}
         </div>
 
         {step === 1 && (
@@ -159,7 +206,10 @@ export default function Page() {
               Давай включим нашу песню. Она должна звучать только с твоего
               разрешения.
             </p>
-            <audio ref={audioRef} src="/music/song.mp3" preload="none" />
+            <div className="music-status">
+              Музыка: {musicUrl ? "найдена" : "не найдена"}
+            </div>
+            <audio ref={audioRef} src={musicUrl ?? ""} preload="none" />
             <div className="row">
               <button className="btn" onClick={playMusic}>
                 ▶ Музыка
@@ -175,17 +225,17 @@ export default function Page() {
           <section className="stack">
             <p>Наши кадры, которые сделали этот год особенным.</p>
             <div className="slideshow">
-              {isPhotoBroken ? (
+              {!hasPhotos || isPhotoBroken ? (
                 <div className="photo placeholder">
                   <div className="placeholder-heart">❤</div>
-                  <span>Добавь фото в /public/photos</span>
+                  <span>Добавь фото в public/photos</span>
                 </div>
               ) : (
                 <img
                   className="photo"
-                  src={currentPhoto}
+                  src={currentPhoto ?? ""}
                   alt="Наши фото"
-                  onError={() => markBroken(currentPhoto)}
+                  onError={() => currentPhoto && markBroken(currentPhoto)}
                 />
               )}
             </div>
@@ -193,16 +243,22 @@ export default function Page() {
               <button
                 className="btn"
                 onClick={() =>
-                  setSlideIndex((prev) => (prev - 1 + PHOTOS.length) % PHOTOS.length)
+                  setSlideIndex((prev) =>
+                    photos.length ? (prev - 1 + photos.length) % photos.length : 0
+                  )
                 }
+                disabled={!hasPhotos}
               >
                 Назад
               </button>
               <button
                 className="btn"
                 onClick={() =>
-                  setSlideIndex((prev) => (prev + 1) % PHOTOS.length)
+                  setSlideIndex((prev) =>
+                    photos.length ? (prev + 1) % photos.length : 0
+                  )
                 }
+                disabled={!hasPhotos}
               >
                 Вперёд
               </button>
