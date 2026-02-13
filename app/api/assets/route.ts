@@ -34,7 +34,10 @@ export async function GET() {
     .filter((file) => isSupported(file, MUSIC_EXTENSIONS))
     .sort((a, b) => a.localeCompare(b, "ru", { sensitivity: "base" }));
 
-  const musicFile = musicFiles[0] ?? null;
+  const preferredMusic = musicFiles.find(
+    (file) => file.toLowerCase() === "song.mp3"
+  );
+  const musicFile = preferredMusic ?? musicFiles[0] ?? null;
 
   return NextResponse.json({
     photos: photoFiles.map((file) => toPublicUrl("photos", file)),
