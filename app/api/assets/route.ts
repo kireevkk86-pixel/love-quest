@@ -39,6 +39,7 @@ export async function GET() {
   return NextResponse.json({
     photos: photoFiles.map((file) => toPublicUrl("photos", file)),
     music: musicFile ? toPublicUrl("music", musicFile) : null,
-    musicName: musicFile,
+    photoFiles,
+    musicFiles,
   });
 }

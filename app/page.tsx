@@ -14,7 +14,8 @@ type Particle = {
 type AssetsResponse = {
   photos: string[];
   music: string | null;
-  musicName: string | null;
+  photoFiles: string[];
+  musicFiles: string[];
 };
 
 const TOTAL_STEPS = 7;
@@ -29,7 +30,8 @@ export default function Page() {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
-  const [musicName, setMusicName] = useState<string | null>(null);
+  const [photoFiles, setPhotoFiles] = useState<string[]>([]);
+  const [musicFiles, setMusicFiles] = useState<string[]>([]);
   const [assetsError, setAssetsError] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -55,14 +57,16 @@ export default function Page() {
         if (!active) return;
         setPhotos(Array.isArray(data.photos) ? data.photos : []);
         setMusicUrl(data.music ?? null);
-        setMusicName(data.musicName ?? null);
+        setPhotoFiles(Array.isArray(data.photoFiles) ? data.photoFiles : []);
+        setMusicFiles(Array.isArray(data.musicFiles) ? data.musicFiles : []);
         setAssetsError(null);
       } catch (err) {
         if (!active) return;
         setAssetsError(err instanceof Error ? err.message : "Unknown error");
         setPhotos([]);
         setMusicUrl(null);
-        setMusicName(null);
+        setPhotoFiles([]);
+        setMusicFiles([]);
       }
     };
     loadAssets();
@@ -180,8 +184,8 @@ export default function Page() {
           <span className="step">{stepLabel}</span>
           <h1>{screenTitle}</h1>
           <div className="asset-status">
-            <span>Фото: {photos.length} файлов</span>
-            <span>Музыка: {musicName ?? "нет"}</span>
+            <span>Фото: {photoFiles.length}</span>
+            <span>Музыка: {musicFiles[0] ?? "не найдена"}</span>
           </div>
           {assetsError && (
             <span className="asset-error">Ошибка чтения файлов: {assetsError}</span>
