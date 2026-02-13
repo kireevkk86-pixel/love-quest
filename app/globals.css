@@ -20,8 +20,8 @@ html,
 body {
   padding: 0;
   margin: 0;
-  font-family: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Sans", Arial,
-    sans-serif;
+  font-family: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande",
+    "Lucida Sans", Arial, sans-serif;
   color: var(--text);
   min-height: 100%;
   background: radial-gradient(circle at top left, var(--bg-1), transparent 55%),
@@ -177,12 +177,6 @@ p {
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 16px 30px rgba(74, 30, 107, 0.15);
   background: #fff7fb;
-  opacity: 0;
-  transition: opacity 0.35s ease;
-}
-
-.photo.loaded {
-  opacity: 1;
 }
 
 .quiz-image {
@@ -299,6 +293,41 @@ p {
   border-radius: 999px;
   font-size: 0.95rem;
   z-index: 5;
+}
+
+.effect-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 10, 30, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 6;
+  padding: 24px;
+}
+
+.effect-card {
+  width: min(560px, 92vw);
+  background: #fff;
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: 0 24px 50px rgba(28, 10, 40, 0.25);
+  display: grid;
+  gap: 16px;
+  text-align: center;
+}
+
+.effect-image {
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: #faf4f8;
+}
+
+.effect-actions {
+  display: flex;
+  justify-content: center;
 }
 
 .heart-layer {
