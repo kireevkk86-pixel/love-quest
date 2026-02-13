@@ -14,8 +14,6 @@
   type AssetsResponse = {
     photos: string[];
     music: string | null;
-    photoFiles: string[];
-    musicFiles: string[];
   };
 
   const TOTAL_STEPS = 7;
@@ -30,11 +28,10 @@
     const [particles, setParticles] = useState<Particle[]>([]);
     const [photos, setPhotos] = useState<string[]>([]);
     const [musicUrl, setMusicUrl] = useState<string | null>(null);
-    const [photoFiles, setPhotoFiles] = useState<string[]>([]);
-    const [musicFiles, setMusicFiles] = useState<string[]>([]);
     const [assetsError, setAssetsError] = useState<string | null>(null);
     const [playing, setPlaying] = useState(false);
     const [objectFit, setObjectFit] = useState<"contain" | "cover">("contain");
+    const [photoLoaded, setPhotoLoaded] = useState(false);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const noAreaRef = useRef<HTMLDivElement | null>(null);
@@ -59,16 +56,12 @@
           if (!active) return;
           setPhotos(Array.isArray(data.photos) ? data.photos : []);
           setMusicUrl(data.music ?? null);
-          setPhotoFiles(Array.isArray(data.photoFiles) ? data.photoFiles : []);
-          setMusicFiles(Array.isArray(data.musicFiles) ? data.musicFiles : []);
           setAssetsError(null);
         } catch (err) {
           if (!active) return;
           setAssetsError(err instanceof Error ? err.message : "Unknown error");
           setPhotos([]);
           setMusicUrl(null);
-          setPhotoFiles([]);
-          setMusicFiles([]);
         }
       };
       loadAssets();
@@ -105,6 +98,7 @@
 
     useEffect(() => {
       setObjectFit("contain");
+      setPhotoLoaded(false);
     }, [currentPhoto]);
 
     useEffect(() => {
@@ -124,11 +118,8 @@
       btn.style.transform = `translate(${nextX}px, ${nextY}px)`;
     };
 
-    const playMusic = async () => {
-      if (!musicUrl) {
-        alert("Добавь mp3/ogg/wav в public/music");
-        return;
-      }
+    const toggleMusic = async () => {
+      if (!musicUrl) return;
       const audio = audioRef.current;
       if (!audio) return;
       try {
@@ -139,9 +130,8 @@
           audio.pause();
           setPlaying(false);
         }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        alert(`Не удалось включить: ${message}`);
+      } catch {
+        setPlaying(false);
       }
     };
 
@@ -211,9 +201,10 @@
             <span className="step">{stepLabel}</span>
             <h1>{screenTitle}</h1>
             <div className="asset-status">
-              <span>Фото: {photoFiles.length}</span>
-              <span>Музыка: {musicFiles[0] ?? "не найдена"}</span>
+              <span>Фото: {photos.length}</span>
+              <span>Музыка: {musicUrl ? "найдена" : "не найдена"}</span>
             </div>
+            {!musicUrl && <span className="asset-error">Добавь mp3/ogg/wav в public/music</span>}
             {assetsError && (
               <span className="asset-error">Ошибка чтения файлов: {assetsError}</span>
             )}
@@ -241,7 +232,7 @@
                 Музыка: {musicUrl ? "найдена" : "не найдена"}
               </div>
               <div className="row">
-                <button className="btn" onClick={playMusic}>
+                <button className="btn" onClick={toggleMusic} disabled={!musicUrl}>
                   {playing ? "⏸ Пауза" : "▶ Музыка"}
                 </button>
                 <button className="btn primary" onClick={() => setStep(3)}>
@@ -262,7 +253,7 @@
                   </div>
                 ) : (
                   <img
-                    className="photo"
+                    className={`photo ${photoLoaded ? "loaded" : ""}`}
                     src={currentPhoto ?? ""}
                     alt="Наши фото"
                     style={{ objectFit }}
@@ -270,6 +261,7 @@
                       const img = event.currentTarget;
                       const ratio = img.naturalWidth / img.naturalHeight;
                       setObjectFit(ratio > 1.35 ? "cover" : "contain");
+                      setPhotoLoaded(true);
                     }}
                     onError={() => currentPhoto && markBroken(currentPhoto)}
                   />
